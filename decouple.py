@@ -2,6 +2,7 @@
 import os
 import sys
 import string
+from importlib import import_module
 from shlex import shlex
 
 
@@ -38,9 +39,13 @@ class Config(object):
     _BOOLEANS = {'1': True, 'yes': True, 'true': True, 'on': True,
                  '0': False, 'no': False, 'false': False, 'off': False, '': False}
 
-    def __init__(self, repository, fixed_config=None):
+    def __init__(self, repository, env_variable=None):
+        ENV = os.environ.get(str(env_variable)) or repository[str(env_variable)]
+        mod = import_module('config.settings.environments.{}'.format(ENV))
+
+        self.ENV = ENV
         self.repository = repository
-        self.fixed_config = fixed_config
+        self.fixed_config = mod.FIXED_CONFIG if hasattr(mod, 'FIXED_CONFIG') else {}
 
     def _cast_boolean(self, value):
         """
@@ -161,10 +166,10 @@ class AutoConfig(object):
         '.env': RepositoryEnv,
     }
 
-    def __init__(self, search_path=None, fixed_config=None):
+    def __init__(self, search_path=None, env_variable=None):
         self.search_path = search_path
         self.config = None
-        self.fixed_config = fixed_config
+        self.env_variable = env_variable
 
     def _find_file(self, path):
         # look for all files in the current path
@@ -189,7 +194,7 @@ class AutoConfig(object):
             filename = ''
         Repository = self.SUPPORTED.get(os.path.basename(filename), RepositoryEmpty)
 
-        self.config = Config(Repository(filename), fixed_config=self.fixed_config)
+        self.config = Config(Repository(filename), env_variable=self.env_variable)
 
     def _caller_path(self):
         # MAGIC! Get the caller's module path.
