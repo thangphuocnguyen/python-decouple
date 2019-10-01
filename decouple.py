@@ -38,8 +38,9 @@ class Config(object):
     _BOOLEANS = {'1': True, 'yes': True, 'true': True, 'on': True,
                  '0': False, 'no': False, 'false': False, 'off': False, '': False}
 
-    def __init__(self, repository):
+    def __init__(self, repository, fixed_config=None):
         self.repository = repository
+        self.fixed_config = fixed_config
 
     def _cast_boolean(self, value):
         """
@@ -65,6 +66,8 @@ class Config(object):
             value = os.environ[option]
         elif option in self.repository:
             value = self.repository[option]
+        elif self.fixed_config is not None and option in self.fixed_config:
+            value = self.fixed_config[option]
         else:
             if isinstance(default, Undefined):
                 raise UndefinedValueError('{} not found. Declare it as envvar or define a default value.'.format(option))
@@ -155,9 +158,10 @@ class AutoConfig(object):
         '.env': RepositoryEnv,
     }
 
-    def __init__(self, search_path=None):
+    def __init__(self, search_path=None, fixed_config=None):
         self.search_path = search_path
         self.config = None
+        self.fixed_config = fixed_config
 
     def _find_file(self, path):
         # look for all files in the current path
@@ -182,7 +186,7 @@ class AutoConfig(object):
             filename = ''
         Repository = self.SUPPORTED.get(os.path.basename(filename), RepositoryEmpty)
 
-        self.config = Config(Repository(filename))
+        self.config = Config(Repository(filename), fixed_config=self.fixed_config)
 
     def _caller_path(self):
         # MAGIC! Get the caller's module path.
