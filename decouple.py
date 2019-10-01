@@ -56,6 +56,9 @@ class Config(object):
     def _cast_do_nothing(value):
         return value
 
+    def set_fixed_config(self, FIXED_CONFIG):
+        self.fixed_config = FIXED_CONFIG
+
     def get(self, option, default=undefined, cast=undefined):
         """
         Return the value for option or default if defined.
